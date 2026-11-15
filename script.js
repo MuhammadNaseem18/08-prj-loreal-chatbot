@@ -2,17 +2,70 @@
 const chatForm = document.getElementById("chatForm");
 const userInput = document.getElementById("userInput");
 const chatWindow = document.getElementById("chatWindow");
+const sendButton = document.getElementById("sendBtn");
+
+// Replace this with the class-hosted Cloudflare Worker URL from your README.
+const proxyUrl = "YOUR_CLOUDFLARE_WORKER_URL";
+
+// This instruction keeps the chatbot focused on L'Oréal beauty advice.
+const systemPrompt =
+  "You are a helpful L'Oréal beauty advisor. Answer questions about L'Oréal products, skincare, haircare, makeup, fragrance, beauty routines, and beauty-related recommendations. For questions outside these topics, politely refuse and say that you can only help with L'Oréal products and beauty advice. Do not provide unrelated information, even if the user asks directly. Never invent product details; say when you are unsure.";
+
+// Keep the conversation so the assistant can use earlier messages as context.
+const messages = [{ role: "system", content: systemPrompt }];
 
 // Set initial message
 chatWindow.textContent = "👋 Hello! How can I help you today?";
 
+function addMessage(text, sender) {
+  const message = document.createElement("div");
+  message.className = `msg ${sender}`;
+  message.textContent = text;
+  chatWindow.appendChild(message);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
 /* Handle form submit */
-chatForm.addEventListener("submit", (e) => {
+chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  // When using Cloudflare, you'll need to POST a `messages` array in the body,
-  // and handle the response using: data.choices[0].message.content
+  const messageText = userInput.value.trim();
+  if (!messageText) {
+    return;
+  }
 
-  // Show message
-  chatWindow.innerHTML = "Connect to the OpenAI API for a response!";
+  addMessage(messageText, "user");
+  messages.push({ role: "user", content: messageText });
+  userInput.value = "";
+  sendButton.disabled = true;
+
+  try {
+    const response = await fetch(proxyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content;
+    if (!reply) {
+      throw new Error("The API returned no assistant message.");
+    }
+
+    messages.push({ role: "assistant", content: reply });
+    addMessage(reply, "ai");
+  } catch (error) {
+    console.error("Chat request failed:", error);
+    addMessage(
+      "Sorry, I could not connect right now. Please check the chatbot proxy URL and try again.",
+      "ai",
+    );
+  } finally {
+    sendButton.disabled = false;
+    userInput.focus();
+  }
 });
