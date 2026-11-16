@@ -5,11 +5,11 @@ const chatWindow = document.getElementById("chatWindow");
 const sendButton = document.getElementById("sendBtn");
 
 // Replace this with the class-hosted Cloudflare Worker URL from your README.
-const proxyUrl = "YOUR_CLOUDFLARE_WORKER_URL";
+const proxyUrl = "https://lorealchatbot.hadinaseem18.workers.dev/";
 
 // This instruction keeps the chatbot focused on L'Oréal beauty advice.
 const systemPrompt =
-  "You are a helpful L'Oréal beauty advisor. Answer questions about L'Oréal products, skincare, haircare, makeup, fragrance, beauty routines, and beauty-related recommendations. For questions outside these topics, politely refuse and say that you can only help with L'Oréal products and beauty advice. Do not provide unrelated information, even if the user asks directly. Never invent product details; say when you are unsure.";
+  "You are a helpful L'Oréal beauty advisor. Answer questions about L'Oréal products, skincare, haircare, makeup, fragrance, beauty routines, and beauty-related recommendations. Use a few relevant emojis naturally to make your answers friendly, but do not overuse them. For questions outside these topics, politely refuse and say that you can only help with L'Oréal products and beauty advice. Do not provide unrelated information, even if the user asks directly. Never invent product details; say when you are unsure.";
 
 // Keep the conversation so the assistant can use earlier messages as context.
 const messages = [{ role: "system", content: systemPrompt }];
@@ -34,6 +34,8 @@ chatForm.addEventListener("submit", async (e) => {
     return;
   }
 
+  // Show only the latest question and response in the chat window.
+  chatWindow.replaceChildren();
   addMessage(messageText, "user");
   messages.push({ role: "user", content: messageText });
   userInput.value = "";
